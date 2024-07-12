@@ -17,8 +17,8 @@ jobs:
 
       - name: Set up Git
         run: |
-          git config --local user.name "Artem Zakharchenko"
-          git config --local user.email "kettanaito@gmail.com"
+          git config --local user.name "Lucas Garrafielo"
+          git config --local user.email "lucasgarrafielo@gmail.com"
 
       - name: Set up Node.js
         uses: actions/setup-node@v3

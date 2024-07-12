@@ -1,5 +1,5 @@
 {
-  "name": "@mswjs/interceptors",
+  "name": "@eurmn/interceptors",
   "description": "Low-level HTTP/HTTPS/XHR/fetch request interception library.",
   "version": "0.33.0",
   "main": "./lib/node/index.js",
@@ -120,7 +120,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/mswjs/interceptors"
+    "url": "https://github.com/eurmn/interceptors"
   },
   "devDependencies": {
     "@commitlint/cli": "^16.0.2",
