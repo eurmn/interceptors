@@ -1,12 +1,14 @@
 import type { Logger } from '@open-draft/logger'
+import { InterceptorContext } from 'src/Interceptor'
 import { XMLHttpRequestEmitter } from '.'
 import { RequestController } from '../../RequestController'
-import { XMLHttpRequestController } from './XMLHttpRequestController'
 import { handleRequest } from '../../utils/handleRequest'
+import { XMLHttpRequestController } from './XMLHttpRequestController'
 
 export interface XMLHttpRequestProxyOptions {
   emitter: XMLHttpRequestEmitter
   logger: Logger
+  context: InterceptorContext
 }
 
 /**
@@ -17,8 +19,9 @@ export interface XMLHttpRequestProxyOptions {
 export function createXMLHttpRequestProxy({
   emitter,
   logger,
+  context,
 }: XMLHttpRequestProxyOptions) {
-  const XMLHttpRequestProxy = new Proxy(globalThis.XMLHttpRequest, {
+  const XMLHttpRequestProxy = new Proxy(context.XMLHttpRequest, {
     construct(target, args, newTarget) {
       logger.info('constructed new XMLHttpRequest')
 

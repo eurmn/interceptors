@@ -1,26 +1,43 @@
-import { describe, vi, it, expect, afterEach } from 'vitest'
 import {
-  Interceptor,
-  getGlobalSymbol,
+  describe,
+  vi,
+  it,
+  expect,
+  afterEach,
+  beforeAll,
+  afterAll,
+} from 'vitest'
+import {
   deleteGlobalSymbol,
+  getGlobalSymbol,
+  Interceptor,
   InterceptorReadyState,
 } from './Interceptor'
 import { nextTickAsync } from './utils/nextTick'
+import { JSDOM } from 'jsdom'
 
 const symbol = Symbol('test')
 
+let dom: JSDOM
+beforeAll(() => {
+  dom = new JSDOM()
+})
+afterAll(() => {
+  dom.window.close()
+})
+
 afterEach(() => {
-  deleteGlobalSymbol(symbol)
+  deleteGlobalSymbol(symbol, dom.window)
 })
 
 it('does not set a maximum listeners limit', () => {
-  const interceptor = new Interceptor(symbol)
+  const interceptor = new Interceptor(symbol, dom.window)
   expect(interceptor['emitter'].getMaxListeners()).toBe(0)
 })
 
 describe('on()', () => {
   it('adds a new listener using "on()"', () => {
-    const interceptor = new Interceptor(symbol)
+    const interceptor = new Interceptor(symbol, dom.window)
     expect(interceptor['emitter'].listenerCount('event')).toBe(0)
 
     const listener = vi.fn()
@@ -31,7 +48,7 @@ describe('on()', () => {
 
 describe('once()', () => {
   it('calls the listener only once', () => {
-    const interceptor = new Interceptor(symbol)
+    const interceptor = new Interceptor(symbol, dom.window)
     const listener = vi.fn()
 
     interceptor.once('foo', listener)
@@ -52,7 +69,7 @@ describe('once()', () => {
 
 describe('off()', () => {
   it('removes a listener using "off()"', () => {
-    const interceptor = new Interceptor(symbol)
+    const interceptor = new Interceptor(symbol, dom.window)
     expect(interceptor['emitter'].listenerCount('event')).toBe(0)
 
     const listener = vi.fn()
@@ -66,25 +83,25 @@ describe('off()', () => {
 
 describe('persistence', () => {
   it('stores global reference to the applied interceptor', () => {
-    const interceptor = new Interceptor(symbol)
+    const interceptor = new Interceptor(symbol, dom.window)
     interceptor.apply()
 
-    expect(getGlobalSymbol(symbol)).toEqual(interceptor)
+    expect(getGlobalSymbol(symbol, dom.window)).toEqual(interceptor)
   })
 
   it('deletes global reference when the interceptor is disposed', () => {
-    const interceptor = new Interceptor(symbol)
+    const interceptor = new Interceptor(symbol, dom.window)
 
     interceptor.apply()
     interceptor.dispose()
 
-    expect(getGlobalSymbol(symbol)).toBeUndefined()
+    expect(getGlobalSymbol(symbol, dom.window)).toBeUndefined()
   })
 })
 
 describe('readyState', () => {
   it('sets the state to "INACTIVE" when the interceptor is created', () => {
-    const interceptor = new Interceptor(symbol)
+    const interceptor = new Interceptor(symbol, dom.window)
     expect(interceptor.readyState).toBe(InterceptorReadyState.INACTIVE)
   })
 
@@ -94,14 +111,14 @@ describe('readyState', () => {
         return false
       }
     }
-    const interceptor = new MyInterceptor(symbol)
+    const interceptor = new MyInterceptor(symbol, dom.window)
     interceptor.apply()
 
     expect(interceptor.readyState).toBe(InterceptorReadyState.INACTIVE)
   })
 
   it('perfroms state transition when the interceptor is applying', async () => {
-    const interceptor = new Interceptor(symbol)
+    const interceptor = new Interceptor(symbol, dom.window)
     interceptor.apply()
 
     // The interceptor's state transitions to APPLIED immediately.
@@ -110,7 +127,7 @@ describe('readyState', () => {
   })
 
   it('perfroms state transition when disposing of the interceptor', async () => {
-    const interceptor = new Interceptor(symbol)
+    const interceptor = new Interceptor(symbol, dom.window)
     interceptor.apply()
     interceptor.dispose()
 
@@ -122,7 +139,7 @@ describe('readyState', () => {
 
 describe('apply', () => {
   it('does not apply the same interceptor multiple times', () => {
-    const interceptor = new Interceptor(symbol)
+    const interceptor = new Interceptor(symbol, dom.window)
     const setupSpy = vi.spyOn(
       interceptor,
       // @ts-expect-error Protected property spy.
@@ -137,7 +154,7 @@ describe('apply', () => {
     // The "setup" must not be called repeatedly.
     expect(setupSpy).toHaveBeenCalledTimes(1)
 
-    expect(getGlobalSymbol(symbol)).toEqual(interceptor)
+    expect(getGlobalSymbol(symbol, dom.window)).toEqual(interceptor)
   })
 
   it('does not call "apply" if the interceptor fails environment check', () => {
@@ -147,7 +164,7 @@ describe('apply', () => {
       }
     }
 
-    const interceptor = new MyInterceptor(Symbol('test'))
+    const interceptor = new MyInterceptor(Symbol('test'), dom.window)
     const setupSpy = vi.spyOn(
       interceptor,
       // @ts-expect-error Protected property spy.
@@ -159,8 +176,8 @@ describe('apply', () => {
   })
 
   it('proxies listeners from new interceptor to already running interceptor', () => {
-    const firstInterceptor = new Interceptor(symbol)
-    const secondInterceptor = new Interceptor(symbol)
+    const firstInterceptor = new Interceptor(symbol, dom.window)
+    const secondInterceptor = new Interceptor(symbol, dom.window)
 
     firstInterceptor.apply()
     const firstListener = vi.fn()
@@ -185,7 +202,7 @@ describe('apply', () => {
 
 describe('dispose', () => {
   it('removes all listeners when the interceptor is disposed', async () => {
-    const interceptor = new Interceptor(symbol)
+    const interceptor = new Interceptor(symbol, dom.window)
 
     interceptor.apply()
     const listener = vi.fn()

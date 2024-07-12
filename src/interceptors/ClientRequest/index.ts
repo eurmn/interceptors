@@ -21,7 +21,7 @@ export class ClientRequestInterceptor extends Interceptor<HttpRequestEventMap> {
   static symbol = Symbol('client-request-interceptor')
 
   constructor() {
-    super(ClientRequestInterceptor.symbol)
+    super(ClientRequestInterceptor.symbol, globalThis)
   }
 
   protected setup(): void {

@@ -1,36 +1,36 @@
-import { invariant } from 'outvariant'
 import { DeferredPromise } from '@open-draft/deferred-promise'
+import { invariant } from 'outvariant'
+import { createRequestId } from '../../createRequestId'
 import { HttpRequestEventMap, IS_PATCHED_MODULE } from '../../glossary'
-import { Interceptor } from '../../Interceptor'
+import { Interceptor, InterceptorContext } from '../../Interceptor'
 import { RequestController } from '../../RequestController'
+import { canParseUrl } from '../../utils/canParseUrl'
 import { emitAsync } from '../../utils/emitAsync'
 import { handleRequest } from '../../utils/handleRequest'
-import { canParseUrl } from '../../utils/canParseUrl'
-import { createRequestId } from '../../createRequestId'
 
 export class FetchInterceptor extends Interceptor<HttpRequestEventMap> {
   static symbol = Symbol('fetch')
 
-  constructor() {
-    super(FetchInterceptor.symbol)
+  constructor(window: InterceptorContext = globalThis) {
+    super(FetchInterceptor.symbol, window)
   }
 
   protected checkEnvironment() {
     return (
-      typeof globalThis !== 'undefined' &&
-      typeof globalThis.fetch !== 'undefined'
+      typeof this.context !== 'undefined' &&
+      typeof this.context.fetch !== 'undefined'
     )
   }
 
   protected async setup() {
-    const pureFetch = globalThis.fetch
+    const pureFetch = this.context.fetch
 
     invariant(
       !(pureFetch as any)[IS_PATCHED_MODULE],
       'Failed to patch the "fetch" module: already patched.'
     )
 
-    globalThis.fetch = async (input, init) => {
+    this.context.fetch = async (input, init) => {
       const requestId = createRequestId()
 
       /**
@@ -134,22 +134,22 @@ export class FetchInterceptor extends Interceptor<HttpRequestEventMap> {
       })
     }
 
-    Object.defineProperty(globalThis.fetch, IS_PATCHED_MODULE, {
+    Object.defineProperty(this.context.fetch, IS_PATCHED_MODULE, {
       enumerable: true,
       configurable: true,
       value: true,
     })
 
     this.subscriptions.push(() => {
-      Object.defineProperty(globalThis.fetch, IS_PATCHED_MODULE, {
+      Object.defineProperty(this.context.fetch, IS_PATCHED_MODULE, {
         value: undefined,
       })
 
-      globalThis.fetch = pureFetch
+      this.context.fetch = pureFetch
 
       this.logger.info(
-        'restored native "globalThis.fetch"!',
-        globalThis.fetch.name
+        'restored native "this.window.fetch"!',
+        this.context.fetch.name
       )
     })
   }

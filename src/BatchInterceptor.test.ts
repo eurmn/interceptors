@@ -1,6 +1,15 @@
-import { vi, it, expect, afterEach } from 'vitest'
-import { Interceptor } from './Interceptor'
+import { afterAll, afterEach, beforeAll, expect, it, vi } from 'vitest'
 import { BatchInterceptor } from './BatchInterceptor'
+import { Interceptor } from './Interceptor'
+import { JSDOM } from 'jsdom'
+
+let dom: JSDOM
+beforeAll(() => {
+  dom = new JSDOM()
+})
+afterAll(() => {
+  dom.window.close()
+})
 
 afterEach(() => {
   vi.resetAllMocks()
@@ -9,13 +18,13 @@ afterEach(() => {
 it('applies child interceptors', () => {
   class PrimaryInterceptor extends Interceptor<any> {
     constructor() {
-      super(Symbol('primary'))
+      super(Symbol('primary'), dom.window)
     }
   }
 
   class SecondaryInterceptor extends Interceptor<any> {
     constructor() {
-      super(Symbol('secondary'))
+      super(Symbol('secondary'), dom.window)
     }
   }
 
@@ -41,7 +50,7 @@ it('applies child interceptors', () => {
 it('proxies event listeners to the interceptors', () => {
   class PrimaryInterceptor extends Interceptor<{ hello: [string] }> {
     constructor() {
-      super(Symbol('primary'))
+      super(Symbol('primary'), dom.window)
     }
   }
 
@@ -49,7 +58,7 @@ it('proxies event listeners to the interceptors', () => {
     goodbye: [string]
   }> {
     constructor() {
-      super(Symbol('secondary'))
+      super(Symbol('secondary'), dom.window)
     }
   }
 
@@ -83,13 +92,13 @@ it('proxies event listeners to the interceptors', () => {
 it('disposes of child interceptors', async () => {
   class PrimaryInterceptor extends Interceptor<any> {
     constructor() {
-      super(Symbol('primary'))
+      super(Symbol('primary'), dom.window)
     }
   }
 
   class SecondaryInterceptor extends Interceptor<any> {
     constructor() {
-      super(Symbol('secondary'))
+      super(Symbol('secondary'), dom.window)
     }
   }
 
@@ -116,12 +125,12 @@ it('disposes of child interceptors', async () => {
 it('forwards listeners added via "on()"', () => {
   class FirstInterceptor extends Interceptor<any> {
     constructor() {
-      super(Symbol('first'))
+      super(Symbol('first'), dom.window)
     }
   }
   class SecondaryInterceptor extends Interceptor<any> {
     constructor() {
-      super(Symbol('second'))
+      super(Symbol('second'), dom.window)
     }
   }
 
@@ -148,12 +157,12 @@ it('forwards listeners removal via "off()"', () => {
 
   class FirstInterceptor extends Interceptor<Events> {
     constructor() {
-      super(Symbol('first'))
+      super(Symbol('first'), dom.window)
     }
   }
   class SecondaryInterceptor extends Interceptor<Events> {
     constructor() {
-      super(Symbol('second'))
+      super(Symbol('second'), dom.window)
     }
   }
 
@@ -181,12 +190,12 @@ it('forwards removal of all listeners by name via ".removeAllListeners()"', () =
 
   class FirstInterceptor extends Interceptor<Events> {
     constructor() {
-      super(Symbol('first'))
+      super(Symbol('first'), dom.window)
     }
   }
   class SecondaryInterceptor extends Interceptor<Events> {
     constructor() {
-      super(Symbol('second'))
+      super(Symbol('second'), dom.window)
     }
   }
 
@@ -219,12 +228,12 @@ it('forwards removal of all listeners by name via ".removeAllListeners()"', () =
 it('forwards removal of all listeners via ".removeAllListeners()"', () => {
   class FirstInterceptor extends Interceptor<any> {
     constructor() {
-      super(Symbol('first'))
+      super(Symbol('first'), dom.window)
     }
   }
   class SecondaryInterceptor extends Interceptor<any> {
     constructor() {
-      super(Symbol('second'))
+      super(Symbol('second'), dom.window)
     }
   }
 

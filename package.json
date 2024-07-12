@@ -133,6 +133,7 @@
     "@types/express-rate-limit": "^6.0.0",
     "@types/follow-redirects": "^1.14.1",
     "@types/jest": "^27.0.3",
+    "@types/jsdom": "^21.1.7",
     "@types/node": "^18.19.31",
     "@types/node-fetch": "2.5.12",
     "@types/supertest": "^2.0.11",
@@ -174,6 +175,7 @@
     "@open-draft/logger": "^0.3.0",
     "@open-draft/until": "^2.0.0",
     "is-node-process": "^1.2.0",
+    "jsdom": "^24.1.0",
     "outvariant": "^1.4.3",
     "strict-event-emitter": "^0.5.1"
   },

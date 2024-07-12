@@ -1,8 +1,10 @@
 import { Logger } from '@open-draft/logger'
+import { DOMWindow } from 'jsdom'
 import { Emitter, Listener } from 'strict-event-emitter'
 
 export type InterceptorEventMap = Record<string, any>
 export type InterceptorSubscription = () => void
+export type InterceptorContext = DOMWindow | typeof globalThis
 
 /**
  * Request header name to detect when a single request
@@ -13,23 +15,6 @@ export type InterceptorSubscription = () => void
  */
 export const INTERNAL_REQUEST_ID_HEADER_NAME =
   'x-interceptors-internal-request-id'
-
-export function getGlobalSymbol<V>(symbol: Symbol): V | undefined {
-  return (
-    // @ts-ignore https://github.com/Microsoft/TypeScript/issues/24587
-    globalThis[symbol] || undefined
-  )
-}
-
-function setGlobalSymbol(symbol: Symbol, value: any): void {
-  // @ts-ignore
-  globalThis[symbol] = value
-}
-
-export function deleteGlobalSymbol(symbol: Symbol): void {
-  // @ts-ignore
-  delete globalThis[symbol]
-}
 
 export enum InterceptorReadyState {
   INACTIVE = 'INACTIVE',
@@ -42,6 +27,25 @@ export enum InterceptorReadyState {
 export type ExtractEventNames<Events extends Record<string, any>> =
   Events extends Record<infer EventName, any> ? EventName : never
 
+
+export function getGlobalSymbol<V>(symbol: Symbol, context: InterceptorContext): V | undefined {
+  return (
+    // @ts-ignore https://github.com/Microsoft/TypeScript/issues/24587
+    context[symbol] || undefined
+  )
+}
+
+function setGlobalSymbol(symbol: Symbol, value: any, context: InterceptorContext): void {
+  // @ts-ignore
+  context[symbol] = value
+}
+
+export function deleteGlobalSymbol(symbol: Symbol, context: InterceptorContext): void {
+  // @ts-ignore
+  delete context[symbol]
+}
+
+
 export class Interceptor<Events extends InterceptorEventMap> {
   protected emitter: Emitter<Events>
   protected subscriptions: Array<InterceptorSubscription>
@@ -49,7 +53,7 @@ export class Interceptor<Events extends InterceptorEventMap> {
 
   public readyState: InterceptorReadyState
 
-  constructor(private readonly symbol: symbol) {
+  constructor(private readonly symbol: symbol, protected readonly context: InterceptorContext = globalThis) {
     this.readyState = InterceptorReadyState.INACTIVE
 
     this.emitter = new Emitter()
@@ -211,7 +215,7 @@ export class Interceptor<Events extends InterceptorEventMap> {
     // indicating that the interceptor is no longer running.
     this.clearInstance()
 
-    logger.info('global symbol deleted:', getGlobalSymbol(this.symbol))
+    logger.info('global symbol deleted:', getGlobalSymbol(this.symbol, this.context))
 
     if (this.subscriptions.length > 0) {
       logger.info('disposing of %d subscriptions...', this.subscriptions.length)
@@ -232,18 +236,18 @@ export class Interceptor<Events extends InterceptorEventMap> {
   }
 
   private getInstance(): this | undefined {
-    const instance = getGlobalSymbol<this>(this.symbol)
+    const instance = getGlobalSymbol<this>(this.symbol, this.context)
     this.logger.info('retrieved global instance:', instance?.constructor?.name)
     return instance
   }
 
   private setInstance(): void {
-    setGlobalSymbol(this.symbol, this)
+    setGlobalSymbol(this.symbol, this, this.context)
     this.logger.info('set global instance!', this.symbol.description)
   }
 
   private clearInstance(): void {
-    deleteGlobalSymbol(this.symbol)
+    deleteGlobalSymbol(this.symbol, this.context)
     this.logger.info('cleared global instance!', this.symbol.description)
   }
 }
